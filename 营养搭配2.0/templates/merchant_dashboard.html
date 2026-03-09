@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>商家中心 - NutriAdvisor</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        .product-meta {
+            : flex;
+                gap: 15px;
+                color: #666;
+                font-size: 0.9em;
+                margin-top: 5px;
+            }
+
+            .product-price {
+                color: #2ed573;
+                font-weight: bold;
+            }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+        }
+
+       .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+       .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+       .logout-btn {
+            background: #ff4757;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+       .logout-btn:hover {
+            background: #ff6b81;
+        }
+
+       .product-form {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+       .product-list {
+            display: grid;
+            gap: 15px;
+        }
+
+       .product-card {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+       .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+       .product-id {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+       .ingredients {
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #7bed9f;
+        }
+
+       .coupon-form {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+       .sales-analysis-section {
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+       .result-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+        }
+
+       .error-card {
+            background: #ff6b81;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+       .loading {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header-bar">
+            <h2>🏬 商家管理中心 - {{ merchant.name }}</h2>
+            <a href="{{ url_for('merchant_logout') }}" class="logout-btn">退出登录</a>
+        </div>
+
+        <div class="product-form">
+            <h3>商品录入</h3>
+            <form id="productForm" enctype="multipart/form-data">
+                <div style="margin-bottom: 15px;">
+                    <div style="margin-bottom: 10px;">
+                        <input type="radio" id="textInputType" name="inputType" value="text" checked>
+                        <label for="textInputType">文本输入成分</label>
+                        <input type="text" id="textInput" placeholder="例如：白砂糖、小麦粉">
+                    </div>
+                    <div>
+                        <input type="radio" id="imageInputType" name="inputType" value="image">
+                        <label for="imageInputType">上传成分表图片</label>
+                        <input type="file" id="imageInput" accept="image/*">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="productName">商品名称：</label>
+                    <input type="text" id="productName" required>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+            <label for="productPrice">商品价格：</label>
+            <input type="number" step="0.01" id="productPrice" name="price" required>
+        </div>
+
+                <button type="submit">提交商品</button>
+                <div class="loading" id="productLoading"></div>
+            </form>
+            <div id="productResult"></div>
+        </div>
+
+        <div class="product-list">
+            <h3>商品列表</h3>
+            {% for product in merchant.products %}
+            <div class="product-card">
+                <div class="product-header">
+                    <div>
+                        <h4>{{ product.name }}</h4>
+                        <div class="product-meta">
+                            <span class="product-id">ID: {{ product.id }}</span>
+                            <!-- 文档2中的价格显示 -->
+                            <span class="product-price">价格: ￥{{ "%.2f"|format(product.price) }}</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="ingredients">{{ product.ingredients }}</p>
+                <button onclick="deleteProduct({{ product.id }})">删除商品</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="coupon-form">
+            <h3>优惠券管理</h3>
+            <form id="couponForm">
+                <label for="productId">商品 ID：</label>
+                <input type="text" id="productId" required>
+                <label for="discount">折扣：</label>
+                <input type="text" id="discount" required>
+                <label for="startDate">开始日期：</label>
+                <input type="date" id="startDate" required>
+                <label for="endDate">结束日期：</label>
+                <input type="date" id="endDate" required>
+                <label for="condition">使用条件：</label>
+                <input type="text" id="condition" required>
+                <button type="submit">创建优惠券</button>
+                <div class="loading" id="couponLoading"></div>
+            </form>
+            <div id="couponResult"></div>
+        </div>
+
+        <div class="sales-analysis-section">
+            <h3>销售数据分析</h3>
+            <button onclick="fetchSalesAnalysis()">查看销售数据</button>
+            <div class="loading" id="salesLoading"></div>
+            <div id="salesAnalysisResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]').content;
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const csrfToken = getCSRFToken();
+            const formData = new FormData();
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+            const productLoading = document.getElementById('productLoading');
+            const productResult = document.getElementById('productResult');
+
+
+
+            productLoading.style.display = 'inline-block';
+            productResult.innerHTML = '';
+
+            if (inputType === 'text') {
+                const text = document.getElementById('textInput').value;
+                formData.append('ingredients', text);
+            } else {
+                const file = document.getElementById('imageInput').files[0];
+                if (file) {
+                    formData.append('image', file);
+                }
+            }
+            const productPrice = document.getElementById('productPrice').value;
+            formData.append('price', productPrice);
+            const productName = document.getElementById('productName').value;
+            formData.append('name', productName);
+
+            try {
+                const response = await fetch('/merchant/products', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    productResult.innerHTML = `
+                        <div class="result-card">
+                            <p>商品添加成功，ID: ${data.id}</p>
+                        </div>
+                    `;
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    throw new Error(data.error || '添加商品失败');
+                }
+            } catch (error) {
+                productResult.innerHTML = `
+                    <div class="error-card">${error.message}</div>
+                `;
+            } finally {
+                productLoading.style.display = 'none';
+            }
+        });
+
+        async function deleteProduct(id) {
+            const csrfToken = getCSRFToken();
+            if (!confirm("确定要删除此商品吗？")) return;
+
+            try {
+                const response = await fetch(`/merchant/products/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('商品删除成功');
+                    location.reload();
+                } else {
+                    throw new Error(data.error || '删除商品失败');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        document.getElementById('couponForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const csrfToken = getCSRFToken();
+            const productId = document.getElementById('productId').value;
+            const discount = document.getElementById('discount').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const condition = document.getElementById('condition').value;
+            const couponLoading = document.getElementById('couponLoading');
+            const couponResult = document.getElementById('couponResult');
+
+            couponLoading.style.display = 'inline-block';
+            couponResult.innerHTML = '';
+
+            try {
+                const response = await fetch('/merchant/coupons', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        discount: discount,
+                        start_date: startDate,
+                        end_date: endDate,
+                        condition: condition
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    couponResult.innerHTML = `
+                        <div class="result-card">
+                            <p>优惠券创建成功</p>
+                        </div>
+                    `;
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    throw new Error(data.error || '创建优惠券失败');
+                }
+            } catch (error) {
+                couponResult.innerHTML = `
+                    <div class="error-card">${error.message}</div>
+                `;
+            } finally {
+                couponLoading.style.display = 'none';
+            }
+        });
+
+        async function fetchSalesAnalysis() {
+            const csrfToken = getCSRFToken();
+            const salesLoading = document.getElementById('salesLoading');
+            const salesAnalysisResult = document.getElementById('salesAnalysisResult');
+
+            salesLoading.style.display = 'inline-block';
+            salesAnalysisResult.innerHTML = '';
+
+            try {
+                const response = await fetch('/merchant/sales-analysis', {
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    const salesData = data.sales_data.map(item => `
+                        <div class="product-sales">
+                            <h4>${item.product_name}</h4>
+                            <p>销售数量: ${item.sales_count}</p>
+                            <p>销售金额: ${item.sales_amount}</p>
+                        </div>
+                    `).join('');
+                    salesAnalysisResult.innerHTML = `
+                        <div class="result-card">
+                            <h3>销售数据</h3>
+                            ${salesData}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || '获取销售数据失败');
+                }
+            } catch (error) {
+                salesAnalysisResult.innerHTML = `
+                    <div class="error-card">${error.message}</div>
+                `;
+            } finally {
+                salesLoading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
+

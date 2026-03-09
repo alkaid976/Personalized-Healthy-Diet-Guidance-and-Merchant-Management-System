@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>商家注册 - NutriAdvisor</title>
+    <!-- 共用样式 -->
+</head>
+<body>
+    <div class="container">
+        <h2>📦 商家入驻</h2>
+        {% if error %}
+        <div class="error-card">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>商家名称</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>登录密码</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">提交申请</button>
+        </form>
+        <div class="auth-links">
+            <a href="{{ url_for('combined_login') }}">返回登录</a>
+        </div>
+    </div>
+</body>
+</html>

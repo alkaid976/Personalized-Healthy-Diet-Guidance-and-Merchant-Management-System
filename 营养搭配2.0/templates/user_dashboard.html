@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <title>用户中心 - NutriAdvisor</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        /* 新增分析结果样式 */
+.analysis-result {
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 20px 0;
+}
+
+.result-section {
+  margin: 15px 0;
+  padding: 15px;
+  border-left: 4px solid #2ed573;
+  background: #f8f9fa;
+}
+
+.suitability-tag {
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  display: inline-block;
+}
+
+.suitable { background: #2ed573; color: white; }
+.not-suitable { background: #ff4757; color: white; }
+
+.recommendation-list {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+}
+
+.recommendation-list li {
+  padding: 8px 15px;
+  margin: 5px;
+  background: #e8f5e9;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.section-title {
+  color: #2c3e50;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+  margin: 20px 0 15px;
+}
+
+.price-tag {
+  background: #2ed573;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-size: 0.9em;
+}
+
+.add-btn {
+  background: #2ed573;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+            /* 新增盒模型重置 */
+        *, *:before, *:after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft Yahei', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 修复输入框溢出问题 */
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            display: block;
+            background: #fff;
+            transition: border-color 0.3s;
+        }
+
+        /* 新增响应式处理 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+
+            input[type="text"],
+            input[type="file"] {
+                padding: 10px;
+            }
+        }
+
+        /* 修复按钮溢出 */
+        button, .logout-btn {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 调整老人模式输入框 */
+        body.elder-mode input[type="text"],
+        body.elder-mode input[type="file"] {
+            padding: 15px;
+            font-size: 18px;
+            border-width: 3px;
+        }
+
+        /* 新增聚焦样式 */
+        input:focus {
+            outline: none;
+            border-color: #2ed573;
+            box-shadow: 0 0 5px rgba(46, 213, 115, 0.3);
+        }
+        :root {
+            --main-font-size: 14px;
+            --main-bg-color: #f5f6fa;
+            --container-bg: white;
+            --primary-color: #2ed573;
+            --danger-color: #ff4757;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Microsoft Yahei', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            font-size: var(--main-font-size);
+            line-height: 1.6;
+        }
+
+        /* 老人模式样式 */
+        body.elder-mode {
+            --main-font-size: 18px;
+            --main-bg-color: #F0F8FF;
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --primary-color: #0047AB;
+            --danger-color: #FF4444;
+            --text-color: #000;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--container-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .mode-toggle-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            margin-right: 15px;
+            transition: all 0.3s;
+        }
+
+        .mode-toggle-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .logout-btn {
+            background: var(--danger-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .elder-mode .health-section,
+        .elder-mode .shopping-list-section,
+        .elder-mode .analysis-section {
+            border: 3px solid var(--primary-color);
+            margin: 25px 0;
+        }
+
+        button, input, select, textarea {
+            font-size: inherit;
+            padding: 12px 20px;
+            border-radius: 6px;
+        }
+
+        .elder-mode button,
+        .elder-mode input,
+        .elder-mode a {
+            font-size: 20px !important;
+            padding: 15px 25px !important;
+        }
+
+        .wxpay-btn {
+            background: #22ac38;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alipay-btn {
+            background: blue;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .elder-mode .wxpay-btn {
+            font-size: 24px !important;
+            padding: 20px 40px !important;
+        }
+
+        .ingredients {
+            display: none;
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .health-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+        #disease-list li {
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .points-section {
+            background: #e0f7fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .elder-mode .points-section {
+            background: #FFD700;
+            font-weight: bold;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .error-card {
+            background: var(--danger-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 15px 0 5px;
+        }
+
+        .loading-indicator {
+            display: none;
+            font-size: 20px;
+            color: var(--primary-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="container">
+        <div class="header-bar">
+            <h2>👤 欢迎回来，{{ user.username }}</h2>
+            <div>
+                <button class="mode-toggle-btn" onclick="toggleElderMode()">👓 老人模式</button>
+                <a href="{{ url_for('user_logout') }}" class="logout-btn">退出登录</a>
+            </div>
+        </div>
+
+        <div class="points-section">
+            <h3>当前积分: {{ user.points }}</h3>
+        </div>
+
+        <div class="health-section">
+            <h3>健康档案管理</h3>
+            <ul id="disease-list">
+                {% for disease in user.diseases %}
+                <li>
+                    {{ disease.disease_name }}（过敏原：{{ disease.allergies }}，用药：{{ disease.medications }}）
+                    <button onclick="deleteDisease({{ disease.id }})">删除</button>
+                </li>
+                {% endfor %}
+            </ul>
+            <h4>添加新疾病记录</h4>
+            <form id="add-disease-form">
+                <label for="disease-name">疾病名称：</label>
+                <input type="text" id="disease-name" required>
+                <label for="allergies">过敏原：</label>
+                <input type="text" id="allergies">
+                <label for="medications">用药：</label>
+                <input type="text" id="medications">
+                <button type="button" onclick="addDisease()">添加</button>
+            </form>
+        </div>
+        <div class="health-section">
+    <h3>病历上传</h3>
+    <form id="upload-record-form">
+        <input type="file" id="medical-record-file" accept=".pdf,.png,.jpg,.jpeg">
+        <button type="button" onclick="uploadMedicalRecord()">上传病历</button>
+    </form>
+
+    <h4>已上传病历</h4>
+    <ul id="medical-records-list">
+        {% for record in user.medical_records %}
+        <li>
+            {{ record.filename }}（{{ record.upload_time.strftime('%Y-%m-%d %H:%M') }}）
+            <a href="/download/{{ record.id }}" target="_blank">查看</a>
+            <button onclick="deleteRecord({{ record.id }})">删除</button>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+        <div class="analysis-section">
+            <h3>食物分析</h3>
+            <form id="analysisForm">
+                <div>
+                    <input type="radio" id="textInputType" name="inputType" value="text" checked>
+                    <label for="textInputType">文本输入</label>
+                    <input type="text" id="foodText">
+                </div>
+                <div>
+                    <input type="radio" id="imageInputType" name="inputType" value="image">
+                    <label for="imageInputType">图片上传</label>
+                    <input type="file" id="foodImage" accept="image/*">
+                </div>
+                <button type="submit">提交分析</button>
+            </form>
+            <div id="result"></div>
+        </div>
+
+        <div class="shopping-list-section">
+            <h3>购物清单</h3>
+            <form id="shoppingListForm">
+                <div>
+                    <input type="radio" id="textInputTypeSL" name="inputTypeSL" value="text" checked>
+                    <label for="textInputTypeSL">文本输入</label>
+                    <input type="text" id="foodTextSL">
+                </div>
+                <div>
+                    <input type="radio" id="imageInputTypeSL" name="inputTypeSL" value="image">
+                    <label for="imageInputTypeSL">图片上传</label>
+                    <input type="file" id="foodImageSL" accept="image/*">
+                </div>
+                <button type="submit">生成购物清单</button>
+            </form>
+            <div id="shoppingListResult"></div>
+        </div>
+
+            <!-- 修改购物清单显示部分 -->
+{% if shopping_items %}
+<div class="shopping-list-display">
+    <h3>我的购物清单</h3>
+    <h4>总金额：￥{{ "%.2f"|format(total_amount) }}</h4>
+    <ul>
+        {% for product in shopping_items %}
+            <li>
+                {{ product.name }} - ￥{{ "%.2f"|format(product.price) }}
+                <button onclick="removeFromShoppingList('{{ product.name }}')">删除</button>
+                <button onclick="toggleIngredients('{{ product.id }}')">查看配料</button>
+                <div id="ingredients-{{ product.id }}" class="ingredients">
+                    {{ product.ingredients }}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <button onclick="createWXPayment()" class="wxpay-btn">微信支付</button>
+    <button onclick="createWXPayment()" class="alipay-btn">支付宝支付</button>
+</div>
+{% endif %}
+    </div>
+    <script>
+        function initElderMode() {
+            if(localStorage.getItem('elderMode') === 'on') {
+                document.body.classList.add('elder-mode');
+                document.documentElement.style.fontSize = '18px';
+            }
+        }
+        initElderMode();
+
+        // 切换老人模式
+        function toggleElderMode() {
+            document.body.classList.toggle('elder-mode');
+            const isElderMode = document.body.classList.contains('elder-mode');
+            localStorage.setItem('elderMode', isElderMode ? 'on' : 'off');
+            document.documentElement.style.fontSize = isElderMode ? '18px' : '14px';
+        }
+
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]').content;
+        }
+        window.onload = function () {
+            const storedResult = localStorage.getItem('foodAnalysisResult');
+            if (storedResult) {
+                document.getElementById('result').innerHTML = storedResult;
+            }
+        };
+
+        async function addDisease() {
+            const csrfToken = getCSRFToken();
+            const diseaseName = document.getElementById('disease-name').value;
+            const allergies = document.getElementById('allergies').value;
+            const medications = document.getElementById('medications').value;
+
+            if (!diseaseName) {
+                alert("疾病名称不能为空");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/diseases', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        disease_name: diseaseName,
+                        allergies: allergies,
+                        medications: medications
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || '添加失败，请检查输入');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function deleteDisease(id) {
+            const csrfToken = getCSRFToken();
+            if (!confirm("确定要删除此记录吗？")) return;
+
+            try {
+                const response = await fetch('/api/user/diseases', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    throw new Error(data.error || '删除失败');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        document.getElementById('shoppingListForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const csrfToken = getCSRFToken();
+
+            const formData = new FormData();
+            const inputType = document.querySelector('input[name="inputTypeSL"]:checked').value;
+
+            if (inputType === 'text') {
+                const text = document.getElementById('foodTextSL').value;
+                if (!text) {
+                    alert("请输入食物信息");
+                    return;
+                }
+                formData.append('food', text);
+            } else {
+                const file = document.getElementById('foodImageSL').files[0];
+                if (!file) {
+                    alert("请选择图片文件");
+                    return;
+                }
+                formData.append('image', file);
+            }
+
+            try {
+                const response = await fetch('/user/shopping-list', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    const shoppingList = data.shopping_list.map(item => `
+                        <li>
+                            ${item}
+                            <button onclick="addToShoppingList('${item}')">添加到购物清单</button>
+                        </li>
+                    `).join('');
+                    document.getElementById('shoppingListResult').innerHTML = `
+                        <div class="result-card">
+                            <h3>购物清单</h3>
+                            <ul>${shoppingList}</ul>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || '生成购物清单失败');
+                }
+            } catch (error) {
+                document.getElementById('shoppingListResult').innerHTML = `
+                    <div class="error-card">${error.message}</div>
+                `;
+            }
+        });
+
+        async function addToShoppingList(productName) {
+            const csrfToken = getCSRFToken();
+            const formData = new FormData();
+            formData.append('product_name', productName);
+
+            try {
+                const response = await fetch('/user/add-to-shopping-list', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                    // 刷新页面时保留分析结果
+                    const result = document.getElementById('result').innerHTML;
+                    localStorage.setItem('foodAnalysisResult', result);
+                    location.reload();
+                } else {
+                    throw new Error(data.error || '添加到购物清单失败');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const csrfToken = getCSRFToken();
+            const formData = new FormData();
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+
+            if (inputType === 'text') {
+                const text = document.getElementById('foodText').value;
+                if (!text) {
+                    alert("请输入食物信息");
+                    return;
+                }
+                formData.append('food', text);
+            } else {
+                const file = document.getElementById('foodImage').files[0];
+                if (!file) {
+                    alert("请选择图片文件");
+                    return;
+                }
+                formData.append('image', file);
+            }
+
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+const resultHtml = `
+  <div class="analysis-result">
+    <div class="result-section">
+      <span class="suitability-tag ${data.analysis.includes("否") ? 'not-suitable' : 'suitable'}">
+        ${data.analysis.split("1. 是否适合食用：")[1].split("2. 原因分析：")[0]}
+      </span>
+
+      <h4 class="section-title">📋 原因分析</h4>
+      <p class="warning-text">${
+        data.analysis.split("2. 原因分析：")[1].split("3. 推荐商品：")[0]
+      }</p>
+
+      <div class="nutrition-tip">
+        <h4 class="section-title">🍎 饮食建议</h4>
+        <p>${data.analysis.split("5. 饮食建议：")[1]}</p>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <h4 class="section-title">🛒 推荐商品</h4>
+      <ul class="recommendation-list">
+        ${data.recommended_products.map(product => `
+          <li>
+            ${product.name}
+            <span class="price-tag">￥${(product.price || 0).toFixed(2)}</span>
+            <button class="add-btn" onclick="addToShoppingList('${product.name}')">+</button>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <div class="result-section">
+      <h4 class="section-title">📦 推荐类别</h4>
+      <div class="category-tags">
+        ${data.recommended_categories.map(cat => `
+          <span class="category-tag">${cat}</span>
+        `).join('')}
+      </div>
+    </div>
+  </div>
+`;
+                    document.getElementById('result').innerHTML = resultHtml;
+
+
+
+                } else {
+                    throw new Error(data.error || '分析失败');
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div class="error-card">${error.message}</div>
+                `;
+                // 清除本地存储中的分析结果
+                localStorage.removeItem('foodAnalysisResult');
+            }
+        });
+async function removeFromShoppingList(productName) {
+            const csrfToken = getCSRFToken();
+            const formData = new FormData();
+            formData.append('product_name', productName);
+
+            try {
+                const response = await fetch('/user/remove-from-shopping-list', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    throw new Error(data.error || '从购物清单中移除商品失败');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function toggleIngredients(productId) {
+            const ingredientsDiv = document.getElementById(`ingredients-${productId}`);
+
+            if (ingredientsDiv.style.display === 'none' || !ingredientsDiv.innerHTML) {
+                try {
+                    const response = await fetch(`/api/product/ingredients/${productId}`);
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        ingredientsDiv.innerHTML = `<p>配料：${data.ingredients}</p>`;
+                        ingredientsDiv.style.display = 'block';
+                    } else {
+                        throw new Error(data.error || '获取配料失败');
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            } else {
+                ingredientsDiv.style.display = 'none';
+            }
+        }
+
+function createWXPayment() {
+    fetch('/create_wx_payment')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            // 调用微信支付接口
+            wx.chooseWXPay({
+                timestamp: data.timeStamp,
+                nonceStr: data.nonceStr,
+                package: data.package,
+                signType: data.signType,
+                paySign: data.paySign,
+                success: () => {
+                    alert('支付成功！');
+                    // 清空购物车
+                    fetch('/clear_shopping_list', { method: 'POST' })
+                        .then(() => location.reload());
+                },
+                fail: (res) => {
+                    alert('支付失败: ' + res.errMsg);
+                }
+            });
+        }); // 添加缺失的闭合括号和分号
+}
+
+       document.addEventListener('focusin', (e) => {
+            if(e.target.matches('button, input, a')) {
+                e.target.style.outline = '3px solid #FFD700';
+            }
+        });
+
+        document.addEventListener('focusout', (e) => {
+            if(e.target.matches('button, input, a')) {
+                e.target.style.outline = '';
+            }
+        });
+    </script>
+</body>
+</html>
